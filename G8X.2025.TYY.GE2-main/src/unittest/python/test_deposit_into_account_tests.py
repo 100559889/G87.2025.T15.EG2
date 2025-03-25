@@ -9,7 +9,7 @@ from uc3m_money.account_manager import AccountManager
 from uc3m_money.account_management_exception import AccountManagementException
 
 class TestAccountManager(unittest.TestCase):
-    """Valid test"""
+    """Valid test case"""
     def test_valid(self):
         manager = AccountManager()
         with self.assertRaises(AccountManagementException):
