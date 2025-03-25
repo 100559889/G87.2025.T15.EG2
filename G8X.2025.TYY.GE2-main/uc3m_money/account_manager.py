@@ -19,24 +19,30 @@ class AccountManager:
             return False
         return True
 
-    # Method to calculate the balance for the given IBAN
     @staticmethod
     def calculate_balance(iban: str):
         try:
             # Validate the IBAN
             if not AccountManager.validate_iban(iban):
-                raise Exception("Invalid IBAN")
+                raise Exception("The JSON data does not have valid values")
 
             # Load transactions from the JSON file
             with open("transactions.json", "r") as file:
                 transactions = json.load(file)
 
+            # Validate JSON structure
+            if not all(isinstance(t, dict) and "IBAN" in t and "amount" in t for t in transactions):
+                raise Exception("The JSON does not have the expected structure")
+
             # Calculate the balance
             balance = 0.0
             for transaction in transactions:
                 if transaction["IBAN"] == iban:
-                    amount = float(transaction["amount"].replace(",", "."))
-                    balance += amount
+                    try:
+                        amount = float(transaction["amount"].replace(",", "."))
+                        balance += amount
+                    except ValueError:
+                        raise Exception("The JSON data does not have valid values")
 
             # Save the balance data to a JSON file
             balance_data = {
@@ -50,11 +56,14 @@ class AccountManager:
             return True
 
         except FileNotFoundError:
-            raise Exception("Transactions file not found")
+            raise Exception("The data file is not found")
         except json.JSONDecodeError:
-            raise Exception("Invalid JSON format in transactions file")
+            raise Exception("The file is not in JSON format")
         except Exception as e:
-            raise Exception(f"Error calculating balance: {str(e)}")
+            if str(e) not in ["The JSON does not have the expected structure",
+                            "The JSON data does not have valid values"]:
+                raise Exception(f"Error processing data: {str(e)}")
+            raise
 
 def main():
     manager = AccountManager()
