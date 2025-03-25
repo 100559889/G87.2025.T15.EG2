@@ -62,11 +62,17 @@ class TransferRequest:
     @staticmethod
     def validate_date(date_str: str):
         try:
+            # Parse the input date
             date = datetime.strptime(date_str, "%d/%m/%Y")
-            if date.year < 2025 or date.year > 2050:
+
+            # Define the minimum and maximum allowed dates
+            min_date = datetime.strptime("05/03/2025", "%d/%m/%Y")
+            max_date = datetime.strptime("31/12/2050", "%d/%m/%Y")
+
+            # Check if date is within the allowed range
+            if date < min_date or date > max_date:
                 return False
-            if date < datetime.now():
-                return False
+
             return True
         except ValueError:
             return False
@@ -102,7 +108,7 @@ class TransferRequest:
 
     @property
     def transfer_type(self):
-        """Property representing the type of transfer: REGULAR, INMEDIATE or URGENT """
+        """Property representing the type of transfer: REGULAR, IMMEDIATE or URGENT """
         return self.__transfer_type
     @transfer_type.setter
     def transfer_type(self, value):
@@ -110,7 +116,7 @@ class TransferRequest:
 
     @property
     def transfer_amount(self):
-        """Property respresenting the transfer amount"""
+        """Property representing the transfer amount"""
         return self.__transfer_amount
     @transfer_amount.setter
     def transfer_amount(self, value):
@@ -173,21 +179,335 @@ class TransferRequest:
 
         return transfer_code
 
+# Method to run all test cases
+def run_tests():
 
-def main():
-    try:
-        # Example transfer request
-        transfer_code = TransferRequest.transfer_request(
-            from_iban="ES6721000418450200051339",
-            to_iban="ES0621000418450200051348",
-            concept="Pizza Night Food",
-            transfer_type="ORDINARY",
-            date="25/03/2025",
-            amount=15.75
-        )
-        print(f"Transfer successful! Transfer code: {transfer_code}")
-    except Exception as e:
-        print(f"Transfer failed: {str(e)}")
+    test_cases = [
+        # TC1 - Valid transfer request (EC)
+        {
+            "id": "TC1",
+            "description": "Valid transfer request",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "25/03/2025",
+                "amount": 15.75
+            },
+            "expected": "Transfer code",
+            "valid": True
+        },
+        # TC2 - Transfer with minimums (BV)
+        {
+            "id": "TC2",
+            "description": "Transfer with minimums",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "05/03/2025",  # Minimum date
+                "amount": 10.00  # Minimum amount
+            },
+            "expected": "Transfer code",
+            "valid": True
+        },
+        # TC3 - Transfer with maximums (BV)
+        {
+            "id": "TC3",
+            "description": "Transfer with maximums",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "31/12/2050",  # Maximum date
+                "amount": 10000.00  # Maximum amount
+            },
+            "expected": "Transfer code",
+            "valid": True
+        },
+        # TC4 - IBAN too short (EC & BV)
+        {
+            "id": "TC4",
+            "description": "IBAN too short",
+            "input": {
+                "from_iban": "ES672100041845020005133",  # 23 chars
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "25/03/2025",
+                "amount": 15.75
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC5 - IBAN too long (EC & BV)
+        {
+            "id": "TC5",
+            "description": "IBAN too long",
+            "input": {
+                "from_iban": "ES67210004184502000513392",  # 25 chars
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "25/03/2025",
+                "amount": 15.75
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC6 - Wrong country code (EC)
+        {
+            "id": "TC6",
+            "description": "Wrong country code",
+            "input": {
+                "from_iban": "NL6721000418450200051339",  # NL instead of ES
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "25/03/2025",
+                "amount": 15.75
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC7 - Non-numeric characters in IBAN (EC)
+        {
+            "id": "TC7",
+            "description": "Non numeric characters in IBAN",
+            "input": {
+                "from_iban": "ES672100GB£!450200051339",  # Invalid chars
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "25/03/2025",
+                "amount": 15.75
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC8 - One word concept (EC)
+        {
+            "id": "TC8",
+            "description": "One word concept",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "PizzaNight",  # One word
+                "type": "ORDINARY",
+                "date": "25/03/2025",
+                "amount": 15.75
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC9 - Words not separated by a space in concept (EC)
+        {
+            "id": "TC9",
+            "description": "Words not separated by a space",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Loan-Mates",  # Hyphen instead of space
+                "type": "ORDINARY",
+                "date": "25/03/2025",
+                "amount": 15.75
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC10 - Invalid concept length - too short (EC & BV)
+        {
+            "id": "TC10",
+            "description": "Concept too short",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Mate Loan",  # 9 chars
+                "type": "ORDINARY",
+                "date": "25/03/2025",
+                "amount": 15.75
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC11 - Invalid concept length - too long (EC & BV)
+        {
+            "id": "TC11",
+            "description": "Concept too long",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "I asked my mates for some money tn",  # 31 chars
+                "type": "ORDINARY",
+                "date": "25/03/2025",
+                "amount": 15.75
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC12 - Invalid type (EC)
+        {
+            "id": "TC12",
+            "description": "Invalid transfer type",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "SPEEDY",  # Invalid type
+                "date": "25/03/2025",
+                "amount": 15.75
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC13 - Invalid date format (EC)
+        {
+            "id": "TC13",
+            "description": "Invalid date format",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "25th-March-2025",  # Invalid format
+                "amount": 15.75
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC14 - Invalid date (EC)
+        {
+            "id": "TC14",
+            "description": "Invalid date",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "03/25/2025",  # MM/DD/YYYY format
+                "amount": 15.75
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC15 - Past date (EC & BV)
+        {
+            "id": "TC15",
+            "description": "Past date",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "04/03/2025",  # Past date
+                "amount": 15.75
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC16 - Future date (EC & BV)
+        {
+            "id": "TC16",
+            "description": "Date after 2050",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "01/01/2051",  # After 2050
+                "amount": 15.75
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC17 - Below minimum amount (EC & BV)
+        {
+            "id": "TC17",
+            "description": "Below minimum amount",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "25/03/2025",
+                "amount": 9.99  # Below minimum
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC18 - Above maximum amount (EC & BV)
+        {
+            "id": "TC18",
+            "description": "Above maximum amount",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "25/03/2025",
+                "amount": 10000.01  # Above maximum
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC19 - Non float amount (EC)
+        {
+            "id": "TC19",
+            "description": "Non float amount",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "25/03/2025",
+                "amount": "Fifty Quid"  # Not a float
+            },
+            "expected": "Exception",
+            "valid": False
+        },
+        # TC20 - More than two decimal places (EC)
+        {
+            "id": "TC20",
+            "description": "More than two decimal places",
+            "input": {
+                "from_iban": "ES6721000418450200051339",
+                "to_iban": "ES0621000418450200051348",
+                "concept": "Pizza Night Food",
+                "type": "ORDINARY",
+                "date": "25/03/2025",
+                "amount": 15.755  # Three decimal places
+            },
+            "expected": "Exception",
+            "valid": False
+        }
+    ]
+
+    # Run all test cases
+    for test in test_cases:
+        print(f"\nRunning test {test['id']}: {test['description']}")
+        try:
+            result = TransferRequest.transfer_request(
+                from_iban=test["input"]["from_iban"],
+                to_iban=test["input"]["to_iban"],
+                concept=test["input"]["concept"],
+                transfer_type=test["input"]["type"],
+                date=test["input"]["date"],
+                amount=test["input"]["amount"]
+            )
+
+            if test["valid"]:
+                print(f"PASSED: Got transfer code {result}")
+            else:
+                print(f"FAILED: Expected exception but got transfer code {result}")
+        except Exception as e:
+            if test["valid"]:
+                print(f"FAILED: Expected transfer code but got exception: {str(e)}")
+            else:
+                print(f"PASSED: Got expected exception: {str(e)}")
+
 
 if __name__ == "__main__":
-    main()
+    run_tests()
