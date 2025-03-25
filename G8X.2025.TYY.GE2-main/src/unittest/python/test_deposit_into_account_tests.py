@@ -6,6 +6,7 @@ import unittest
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "../../..")))
 
 from uc3m_money.account_manager import AccountManager
+
 from uc3m_money.account_management_exception import AccountManagementException
 
 class TestAccountManager(unittest.TestCase):
